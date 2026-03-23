@@ -6,6 +6,7 @@ with configurable resource limits, timeout enforcement, and multiple
 backend options (in-memory, subprocess, Docker).
 """
 
+import ast
 import asyncio
 import io
 import logging
@@ -60,6 +61,37 @@ class SandboxBackend(ABC):
         ...
 
 
+_SAFE_BUILTINS: Dict[str, Any] = {
+    # Type constructors
+    "int": int, "float": float, "str": str, "bool": bool,
+    "list": list, "dict": dict, "tuple": tuple, "set": set,
+    "frozenset": frozenset, "bytes": bytes, "bytearray": bytearray,
+    # Collection helpers
+    "len": len, "range": range, "enumerate": enumerate, "zip": zip,
+    "map": map, "filter": filter, "sorted": sorted, "reversed": reversed,
+    "min": min, "max": max, "sum": sum, "all": all, "any": any,
+    # Type checking
+    "isinstance": isinstance, "issubclass": issubclass, "type": type,
+    "hasattr": hasattr, "getattr": getattr, "setattr": setattr,
+    # Math
+    "abs": abs, "round": round, "pow": pow, "divmod": divmod,
+    # String
+    "repr": repr, "chr": chr, "ord": ord, "format": format, "print": print,
+    # Other safe
+    "__build_class__": __build_class__,
+    "iter": iter, "next": next, "id": id, "hash": hash, "callable": callable,
+    "staticmethod": staticmethod, "classmethod": classmethod,
+    "property": property, "super": super, "object": object,
+    # Exceptions
+    "Exception": Exception, "ValueError": ValueError, "TypeError": TypeError,
+    "KeyError": KeyError, "IndexError": IndexError,
+    "AttributeError": AttributeError, "RuntimeError": RuntimeError,
+    "StopIteration": StopIteration, "ZeroDivisionError": ZeroDivisionError,
+    "NotImplementedError": NotImplementedError, "OverflowError": OverflowError,
+    "ArithmeticError": ArithmeticError, "LookupError": LookupError,
+}
+
+
 class InMemorySandbox(SandboxBackend):
     """
     In-memory sandbox that executes code via exec() with captured output.
@@ -67,6 +99,9 @@ class InMemorySandbox(SandboxBackend):
     Suitable for testing and trusted code. Uses a restricted namespace
     and captures stdout via io.StringIO. Supports a special __result__
     variable for return values.
+
+    WARNING: InMemorySandbox provides basic isolation but is NOT a security
+    boundary. For untrusted code, use SubprocessSandbox or DockerSandbox.
     """
 
     async def execute(self, code: str, config: SandboxConfig) -> SandboxResult:
@@ -88,11 +123,22 @@ class InMemorySandbox(SandboxBackend):
                 timed_out=True,
             )
 
+    @staticmethod
+    def _check_imports(code: str) -> None:
+        """Parse code AST and reject any import statements."""
+        tree = ast.parse(code)
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                raise ValueError("Import statements are not allowed in sandbox")
+
     def _run_code(self, code: str, config: SandboxConfig) -> SandboxResult:
         stdout_capture = io.StringIO()
         stderr_capture = io.StringIO()
 
-        namespace: Dict[str, Any] = {"__builtins__": __builtins__}
+        namespace: Dict[str, Any] = {
+            "__builtins__": _SAFE_BUILTINS,
+            "__name__": "__sandbox__",
+        }
 
         start_time = time.monotonic()
         exit_code = 0
@@ -101,6 +147,7 @@ class InMemorySandbox(SandboxBackend):
         old_stderr = sys.stderr
 
         try:
+            self._check_imports(code)
             sys.stdout = stdout_capture
             sys.stderr = stderr_capture
             exec(code, namespace)
