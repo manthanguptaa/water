@@ -265,7 +265,6 @@ class AnthropicStreamProvider(StreamingProvider):
             messages=filtered,
             temperature=kwargs.get("temperature", self.temperature),
             max_tokens=kwargs.get("max_tokens", self.max_tokens),
-            stream=True,
         )
         if system:
             create_kwargs["system"] = system
