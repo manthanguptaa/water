@@ -398,7 +398,7 @@ class ExecutionEngine:
                         result = await coro
                 else:
                     if task_timeout:
-                        loop = asyncio.get_event_loop()
+                        loop = asyncio.get_running_loop()
                         result = await asyncio.wait_for(
                             loop.run_in_executor(None, task.execute, params, context),
                             timeout=task_timeout,

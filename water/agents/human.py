@@ -36,7 +36,7 @@ class HumanInputManager:
 
     def create_request(self, request_id: str, prompt: str) -> asyncio.Future:
         """Create a pending human input request."""
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         future = loop.create_future()
         self._pending[request_id] = future
         self._prompts[request_id] = prompt

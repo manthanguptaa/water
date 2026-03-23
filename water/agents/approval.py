@@ -116,7 +116,7 @@ class ApprovalGate:
             return request
 
         # Need human approval — create a future and wait
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         future = loop.create_future()
         self._pending[request_id] = future
 

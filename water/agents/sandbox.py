@@ -65,7 +65,7 @@ class InMemorySandbox(SandboxBackend):
     """
 
     async def execute(self, code: str, config: SandboxConfig) -> SandboxResult:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
 
         try:
             result = await asyncio.wait_for(
@@ -251,7 +251,7 @@ class DockerSandbox(SandboxBackend):
         return self._client
 
     async def execute(self, code: str, config: SandboxConfig) -> SandboxResult:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             None, self._run_in_container, code, config
         )

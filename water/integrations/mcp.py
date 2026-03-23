@@ -259,14 +259,14 @@ class MCPServer:
         """
         reader = asyncio.StreamReader()
         protocol = asyncio.StreamReaderProtocol(reader)
-        await asyncio.get_event_loop().connect_read_pipe(
+        await asyncio.get_running_loop().connect_read_pipe(
             lambda: protocol, sys.stdin
         )
 
-        w_transport, w_protocol = await asyncio.get_event_loop().connect_write_pipe(
+        w_transport, w_protocol = await asyncio.get_running_loop().connect_write_pipe(
             asyncio.streams.FlowControlMixin, sys.stdout
         )
-        writer = asyncio.StreamWriter(w_transport, w_protocol, reader, asyncio.get_event_loop())
+        writer = asyncio.StreamWriter(w_transport, w_protocol, reader, asyncio.get_running_loop())
 
         while True:
             line = await reader.readline()

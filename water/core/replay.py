@@ -65,11 +65,10 @@ class ReplayEngine:
             import asyncio
 
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    return None  # Can't block in async context
+                asyncio.get_running_loop()
+                return None  # Can't block in async context
             except RuntimeError:
-                pass
+                pass  # No running loop — safe to proceed
         return None
 
     async def load_session_async(self, session_id: str) -> Dict[str, Dict[str, Any]]:
