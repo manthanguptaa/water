@@ -17,6 +17,7 @@ configurable TTL, custom key functions, and hit/miss statistics tracking.
 import hashlib
 import json
 import time
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, Callable, List
 from abc import ABC, abstractmethod
@@ -53,7 +54,7 @@ class InMemoryFlowCache(FlowCacheBackend):
 
     def __init__(self) -> None:
         # _store maps key -> {"value": ..., "expires_at": float | None}
-        self._store: Dict[str, Dict[str, Any]] = {}
+        self._store: OrderedDict[str, Dict[str, Any]] = OrderedDict()
 
     def _is_expired(self, key: str) -> bool:
         entry = self._store.get(key)
@@ -68,11 +69,19 @@ class InMemoryFlowCache(FlowCacheBackend):
     async def get(self, key: str) -> Optional[Dict[str, Any]]:
         if self._is_expired(key):
             return None
+        self._store.move_to_end(key)
         return self._store[key]["value"]
 
     async def set(self, key: str, value: Dict[str, Any], ttl: Optional[int] = None) -> None:
         expires_at = (time.monotonic() + ttl) if ttl is not None else None
+        if key in self._store:
+            del self._store[key]
         self._store[key] = {"value": value, "expires_at": expires_at}
+
+    async def evict_oldest(self) -> None:
+        """Remove the oldest entry from the cache."""
+        if self._store:
+            self._store.popitem(last=False)
 
     async def delete(self, key: str) -> bool:
         if key in self._store:
@@ -122,7 +131,7 @@ class FlowCache:
     ttl:
         Default time-to-live in seconds for cached entries.
     max_size:
-        Advisory maximum number of entries (tracked, not strictly enforced).
+        Maximum number of entries. When exceeded, the oldest entry is evicted.
     key_fn:
         Optional callable that takes flow input data and returns a cache key
         string.  When ``None`` a SHA-256 hash of the JSON-serialised input is
@@ -168,6 +177,11 @@ class FlowCache:
         key = self._generate_key(input_data)
         await self.backend.set(key, result, ttl=self.ttl)
         self.stats.size += 1
+        # Enforce max_size by evicting oldest entries
+        while self.stats.size > self.max_size:
+            if isinstance(self.backend, InMemoryFlowCache):
+                await self.backend.evict_oldest()
+            self.stats.size -= 1
 
     async def invalidate(self, input_data: Dict[str, Any]) -> bool:
         """Remove the cached entry for *input_data*.

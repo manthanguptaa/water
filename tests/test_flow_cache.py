@@ -209,14 +209,14 @@ def test_cache_entry_fields():
 
 @pytest.mark.asyncio
 async def test_flow_cache_max_size_tracked():
-    """max_size is stored and size increments on set, but is not enforced."""
+    """max_size is stored and enforced — oldest entries are evicted."""
     fc = FlowCache(max_size=2)
     assert fc.max_size == 2
 
     await fc.set({"i": 1}, {"o": 1})
     await fc.set({"i": 2}, {"o": 2})
-    await fc.set({"i": 3}, {"o": 3})  # Exceeds max_size — not enforced
-    assert fc.stats.size == 3
+    await fc.set({"i": 3}, {"o": 3})  # Exceeds max_size — oldest evicted
+    assert fc.stats.size == 2
 
 
 @pytest.mark.asyncio

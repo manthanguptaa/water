@@ -3,6 +3,7 @@ import uuid
 import sqlite3
 import logging
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -163,18 +164,45 @@ class StorageBackend(ABC):
 
 
 class InMemoryStorage(StorageBackend):
-    """In-memory storage backend for development and testing."""
+    """In-memory storage backend for development and testing.
 
-    def __init__(self) -> None:
-        self._sessions: Dict[str, FlowSession] = {}
+    Parameters
+    ----------
+    max_sessions:
+        Maximum number of sessions to keep. When exceeded, the least recently
+        used session is evicted.
+    max_task_runs_per_session:
+        Maximum number of task runs to keep per session. When exceeded, the
+        oldest task runs are discarded.
+    """
+
+    def __init__(
+        self,
+        max_sessions: int = 10000,
+        max_task_runs_per_session: int = 1000,
+    ) -> None:
+        self.max_sessions = max_sessions
+        self.max_task_runs_per_session = max_task_runs_per_session
+        self._sessions: OrderedDict[str, FlowSession] = OrderedDict()
         self._task_runs: Dict[str, List[TaskRun]] = {}
 
     async def save_session(self, session: FlowSession) -> None:
         session.updated_at = datetime.now(timezone.utc)
+        # If updating an existing session, remove it first so it moves to end
+        if session.execution_id in self._sessions:
+            self._sessions.move_to_end(session.execution_id)
         self._sessions[session.execution_id] = session
+        # Evict oldest (least recently used) if over capacity
+        while len(self._sessions) > self.max_sessions:
+            evicted_id, _ = self._sessions.popitem(last=False)
+            self._task_runs.pop(evicted_id, None)
 
     async def get_session(self, execution_id: str) -> Optional[FlowSession]:
-        return self._sessions.get(execution_id)
+        session = self._sessions.get(execution_id)
+        if session is not None:
+            # Mark as recently used
+            self._sessions.move_to_end(execution_id)
+        return session
 
     async def list_sessions(self, flow_id: Optional[str] = None) -> List[FlowSession]:
         sessions = list(self._sessions.values())
@@ -192,6 +220,9 @@ class InMemoryStorage(StorageBackend):
                 runs[i] = task_run
                 return
         runs.append(task_run)
+        # Cap task runs per session, keeping most recent
+        if len(runs) > self.max_task_runs_per_session:
+            self._task_runs[task_run.execution_id] = runs[-self.max_task_runs_per_session:]
 
     async def get_task_runs(self, execution_id: str) -> List[TaskRun]:
         return list(self._task_runs.get(execution_id, []))
