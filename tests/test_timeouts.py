@@ -28,15 +28,18 @@ class TestOpenAIProviderTimeout:
 
     @pytest.mark.asyncio
     async def test_timeout_raises(self):
-        provider = OpenAIProvider(api_key="fake-key", timeout=0.01)
+        fake_openai = MagicMock()
 
         async def slow_create(**kwargs):
             await asyncio.sleep(5)
 
         mock_client = MagicMock()
         mock_client.chat.completions.create = slow_create
+        fake_openai.AsyncOpenAI.return_value = mock_client
 
-        with patch("openai.AsyncOpenAI", return_value=mock_client):
+        provider = OpenAIProvider(api_key="fake-key", timeout=0.01)
+
+        with patch.dict("sys.modules", {"openai": fake_openai}):
             with pytest.raises(TimeoutError, match="OpenAI API call timed out"):
                 await provider.complete([{"role": "user", "content": "hi"}])
 
