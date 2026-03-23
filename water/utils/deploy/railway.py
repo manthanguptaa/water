@@ -1,9 +1,12 @@
 """Railway deployment support for Water flows."""
 
 import json
+import logging
 import sys
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 def generate_railway_config(
@@ -43,15 +46,14 @@ def cmd_flow_prod_railway(args) -> None:
     if not app_module:
         app_module = _find_app_module()
         if not app_module:
-            print(
-                "Error: Could not auto-detect your FlowServer app module.",
-                file=sys.stderr,
+            logger.error(
+                "Could not auto-detect your FlowServer app module. "
+                "Use --app <module_name> to specify it."
             )
-            print("  Use --app <module_name> to specify it.", file=sys.stderr)
             sys.exit(1)
 
     app_variable = args.var or "app"
-    print(f"Detected app: {app_module}:{app_variable}")
+    logger.info("Detected app: %s:%s", app_module, app_variable)
 
     _ensure_requirements_txt()
 
@@ -60,15 +62,13 @@ def cmd_flow_prod_railway(args) -> None:
 
     config_path = Path.cwd() / "railway.toml"
     config_path.write_text(config)
-    print(f"Generated {config_path}")
+    logger.info("Generated %s", config_path)
 
     if getattr(args, "config_only", False):
         return
 
-    print()
-    print("To deploy to Railway:")
-    print("  1. Install Railway CLI: npm install -g @railway/cli")
-    print("  2. Login: railway login")
-    print("  3. Deploy: railway up")
-    print()
-    print("Or connect your GitHub repo at https://railway.app")
+    logger.info("To deploy to Railway:")
+    logger.info("  1. Install Railway CLI: npm install -g @railway/cli")
+    logger.info("  2. Login: railway login")
+    logger.info("  3. Deploy: railway up")
+    logger.info("Or connect your GitHub repo at https://railway.app")

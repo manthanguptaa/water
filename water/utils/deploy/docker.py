@@ -1,8 +1,11 @@
 """Docker deployment support for Water flows."""
 
+import logging
 import sys
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 def generate_dockerfile(
@@ -152,15 +155,14 @@ def cmd_flow_prod_docker(args) -> None:
     if not app_module:
         app_module = _find_app_module()
         if not app_module:
-            print(
-                "Error: Could not auto-detect your FlowServer app module.",
-                file=sys.stderr,
+            logger.error(
+                "Could not auto-detect your FlowServer app module. "
+                "Use --app <module_name> to specify it."
             )
-            print("  Use --app <module_name> to specify it.", file=sys.stderr)
             sys.exit(1)
 
     app_variable = args.var or "app"
-    print(f"Detected app: {app_module}:{app_variable}")
+    logger.info("Detected app: %s:%s", app_module, app_variable)
 
     _ensure_requirements_txt()
 
@@ -177,17 +179,14 @@ def cmd_flow_prod_docker(args) -> None:
 
     dockerfile_path = Path.cwd() / "Dockerfile"
     dockerfile_path.write_text(configs["dockerfile"])
-    print(f"Generated {dockerfile_path}")
+    logger.info("Generated %s", dockerfile_path)
 
     compose_path = Path.cwd() / "docker-compose.yml"
     compose_path.write_text(configs["compose"])
-    print(f"Generated {compose_path}")
+    logger.info("Generated %s", compose_path)
 
     if getattr(args, "config_only", False):
         return
 
-    print()
-    print("To deploy with Docker:")
-    print("  docker compose up --build")
-    print()
-    print("Your Water flows will be available at http://localhost:8000")
+    logger.info("To deploy with Docker: docker compose up --build")
+    logger.info("Your Water flows will be available at http://localhost:8000")
