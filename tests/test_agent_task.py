@@ -300,3 +300,33 @@ async def test_agent_task_missing_template_variable():
 
     with pytest.raises(ValueError, match="not found in input data"):
         await task.execute({"input_data": {"other": "value"}}, None)
+
+
+@pytest.mark.asyncio
+async def test_agent_task_returns_usage_data():
+    """Verify that token usage data is preserved in the task output."""
+
+    # We create a custom mock that returns 'usage' in its response,
+    # simulating how OpenAIProvider or AnthropicProvider behaves.
+    class UsageMockProvider(LLMProvider):
+        async def complete(self, messages, **kwargs) -> dict:
+            return {
+                "text": "Here is some text.",
+                "usage": {"input_tokens": 100, "output_tokens": 50}
+            }
+
+    task = create_agent_task(
+        id="usage_test_agent",
+        prompt_template="Hello {name}",
+        provider_instance=UsageMockProvider(),
+    )
+
+    result = await task.execute({"input_data": {"name": "World"}}, None)
+
+    # Assert the response text is there
+    assert result["response"] == "Here is some text."
+
+    # Assert the token usage made it into the final result dictionary!
+    assert "usage" in result, "Usage data was stripped from the task result!"
+    assert result["usage"]["input_tokens"] == 100
+    assert result["usage"]["output_tokens"] == 50
