@@ -2,6 +2,7 @@
 
 import asyncio
 import time
+from typing import List
 
 import pytest
 
@@ -153,7 +154,7 @@ class TestExecuteWithRetry:
     @pytest.mark.asyncio
     async def test_on_retry_callback(self):
         """The on_retry callback should be invoked before each retry."""
-        contexts_seen: list[RetryContext] = []
+        contexts_seen: List[RetryContext] = []
 
         async def on_retry(ctx: RetryContext):
             contexts_seen.append(ctx)

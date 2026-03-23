@@ -6,7 +6,7 @@ pip install agno water-ai
 
 import json
 from textwrap import dedent
-from typing import Dict, Optional, Any
+from typing import Dict, List, Optional, Any
 import asyncio
 
 from water.core import Flow, create_task
@@ -29,7 +29,7 @@ class NewsArticle(BaseModel):
 
 
 class SearchResults(BaseModel):
-    articles: list[NewsArticle]
+    articles: List[NewsArticle]
 
 
 class ScrapedArticle(BaseModel):

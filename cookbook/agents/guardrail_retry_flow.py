@@ -8,6 +8,7 @@ back so the next attempt can self-correct.
 """
 
 import asyncio
+from typing import List
 from water.guardrails.base import Guardrail, GuardrailResult
 from water.guardrails.retry import RetryContext, RetryWithFeedback
 
@@ -104,7 +105,7 @@ async def agent_task_integration():
 
     print("=== Agent Task Integration ===\n")
 
-    attempt_log: list[RetryContext] = []
+    attempt_log: List[RetryContext] = []
 
     async def log_retry(ctx: RetryContext):
         attempt_log.append(ctx)

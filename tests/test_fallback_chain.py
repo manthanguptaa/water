@@ -1,6 +1,7 @@
 """Tests for FallbackChain (water.agents.fallback)."""
 
 import asyncio
+from typing import Optional
 
 import pytest
 
@@ -16,7 +17,7 @@ from water.resilience.circuit_breaker import CircuitBreaker
 class FailingProvider(LLMProvider):
     """A provider that always raises an exception."""
 
-    def __init__(self, error: Exception | None = None) -> None:
+    def __init__(self, error: Optional[Exception] = None) -> None:
         self.error = error or RuntimeError("provider failed")
 
     async def complete(self, messages, **kwargs) -> dict:
