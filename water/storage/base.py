@@ -200,12 +200,13 @@ class InMemoryStorage(StorageBackend):
 class SQLiteStorage(StorageBackend):
     """SQLite storage backend for persistent flow execution data."""
 
-    def __init__(self, db_path: str = "water_flows.db") -> None:
+    def __init__(self, db_path: str = "water_flows.db", timeout: float = 30.0) -> None:
         self.db_path = db_path
+        self.timeout = timeout
         self._init_db()
 
     def _init_db(self) -> None:
-        with sqlite3.connect(self.db_path) as conn:
+        with sqlite3.connect(self.db_path, timeout=self.timeout) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS flow_sessions (
                     execution_id TEXT PRIMARY KEY,
@@ -247,7 +248,7 @@ class SQLiteStorage(StorageBackend):
             conn.commit()
 
     def _get_conn(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=self.timeout)
         conn.row_factory = sqlite3.Row
         return conn
 

@@ -21,6 +21,7 @@ alongside regular Python tasks. Includes provider abstractions for
 OpenAI, Anthropic, custom callables, and a mock provider for testing.
 """
 
+import asyncio
 import logging
 import os
 import uuid
@@ -133,11 +134,13 @@ class OpenAIProvider(LLMProvider):
         api_key: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: int = 1024,
+        timeout: float = 60.0,
     ) -> None:
         self.model = model
         self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.timeout = timeout
 
     async def complete(self, messages: List[Dict[str, str]], **kwargs) -> dict:
         try:
@@ -155,12 +158,18 @@ class OpenAIProvider(LLMProvider):
             )
 
         client = openai.AsyncOpenAI(api_key=self.api_key)
-        response = await client.chat.completions.create(
-            model=kwargs.get("model", self.model),
-            messages=messages,
-            temperature=kwargs.get("temperature", self.temperature),
-            max_tokens=kwargs.get("max_tokens", self.max_tokens),
-        )
+        try:
+            response = await asyncio.wait_for(
+                client.chat.completions.create(
+                    model=kwargs.get("model", self.model),
+                    messages=messages,
+                    temperature=kwargs.get("temperature", self.temperature),
+                    max_tokens=kwargs.get("max_tokens", self.max_tokens),
+                ),
+                timeout=self.timeout,
+            )
+        except asyncio.TimeoutError:
+            raise TimeoutError(f"OpenAI API call timed out after {self.timeout}s")
         text = response.choices[0].message.content or ""
         return {"text": text, "usage": response.usage}
 
@@ -174,11 +183,13 @@ class AnthropicProvider(LLMProvider):
         api_key: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: int = 1024,
+        timeout: float = 60.0,
     ) -> None:
         self.model = model
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.timeout = timeout
 
     async def complete(self, messages: List[Dict[str, str]], **kwargs) -> dict:
         try:
@@ -215,7 +226,13 @@ class AnthropicProvider(LLMProvider):
         if system:
             create_kwargs["system"] = system
 
-        response = await client.messages.create(**create_kwargs)
+        try:
+            response = await asyncio.wait_for(
+                client.messages.create(**create_kwargs),
+                timeout=self.timeout,
+            )
+        except asyncio.TimeoutError:
+            raise TimeoutError(f"Anthropic API call timed out after {self.timeout}s")
         text = response.content[0].text if response.content else ""
         return {"text": text, "usage": response.usage}
 

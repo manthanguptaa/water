@@ -15,7 +15,7 @@ class PostgresStorage(StorageBackend):
     Call :meth:`initialize` once before use to create the required tables.
     """
 
-    def __init__(self, dsn: str) -> None:
+    def __init__(self, dsn: str, command_timeout: float = 30.0) -> None:
         try:
             import asyncpg  # noqa: F401
         except ImportError:
@@ -25,6 +25,7 @@ class PostgresStorage(StorageBackend):
             )
 
         self._dsn = dsn
+        self.command_timeout = command_timeout
         self._pool: Any = None
 
     async def initialize(self) -> None:
@@ -32,7 +33,7 @@ class PostgresStorage(StorageBackend):
         the connection pool."""
         import asyncpg
 
-        self._pool = await asyncpg.create_pool(dsn=self._dsn)
+        self._pool = await asyncpg.create_pool(dsn=self._dsn, command_timeout=self.command_timeout)
 
         async with self._pool.acquire() as conn:
             await conn.execute("""

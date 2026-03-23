@@ -21,6 +21,7 @@ class RedisStorage(StorageBackend):
         self,
         redis_url: str = "redis://localhost:6379",
         prefix: str = "water",
+        socket_timeout: float = 30.0,
     ) -> None:
         try:
             import redis.asyncio as aioredis  # noqa: F401
@@ -32,13 +33,14 @@ class RedisStorage(StorageBackend):
 
         self._redis_url = redis_url
         self._prefix = prefix
+        self.socket_timeout = socket_timeout
         self._redis: Any = None
 
     async def _get_client(self) -> Any:
         if self._redis is None:
             import redis.asyncio as aioredis
 
-            self._redis = aioredis.from_url(self._redis_url, decode_responses=True)
+            self._redis = aioredis.from_url(self._redis_url, decode_responses=True, socket_timeout=self.socket_timeout)
         return self._redis
 
     def _session_key(self, execution_id: str) -> str:
