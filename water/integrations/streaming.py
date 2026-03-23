@@ -47,6 +47,8 @@ class StreamManager:
                 ``"drop_newest"`` -- the new event is discarded (default put_nowait behaviour).
                 ``"drop_oldest"`` -- the oldest event is removed to make room for the new one.
         """
+        if max_queue_size < 0:
+            raise ValueError(f"max_queue_size must be >= 0, got {max_queue_size}")
         if drop_policy not in ("drop_oldest", "drop_newest"):
             raise ValueError(
                 f"Invalid drop_policy {drop_policy!r}. "

@@ -62,6 +62,18 @@ class Task:
         Raises:
             WaterError: If schemas are not Pydantic BaseModel classes or execute is not callable
         """
+        # Validate numeric parameters
+        if retry_count < 0:
+            raise ValueError(f"retry_count must be >= 0, got {retry_count}")
+        if retry_delay < 0:
+            raise ValueError(f"retry_delay must be >= 0, got {retry_delay}")
+        if retry_backoff < 0:
+            raise ValueError(f"retry_backoff must be >= 0, got {retry_backoff}")
+        if timeout is not None and timeout <= 0:
+            raise ValueError(f"timeout must be > 0, got {timeout}")
+        if rate_limit is not None and rate_limit <= 0:
+            raise ValueError(f"rate_limit must be > 0, got {rate_limit}")
+
         self.id: str = id if id else f"task_{uuid.uuid4().hex[:8]}"
         self.description: str = description if description else f"Task {self.id}"
 

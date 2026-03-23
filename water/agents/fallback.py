@@ -87,6 +87,14 @@ class FallbackChain(LLMProvider):
         self.providers = providers
         self.strategy = strategy
         self.circuit_breakers: Dict[int, CircuitBreaker] = circuit_breakers or {}
+
+        # Validate circuit_breaker keys are valid provider indices
+        for key in self.circuit_breakers:
+            if key < 0 or key >= len(providers):
+                raise ValueError(
+                    f"circuit_breakers key {key} is not a valid provider index. "
+                    f"Must be in range 0..{len(providers) - 1}"
+                )
         self.metrics: Dict[int, ProviderMetrics] = {
             i: ProviderMetrics() for i in range(len(providers))
         }

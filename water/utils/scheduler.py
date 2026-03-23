@@ -122,10 +122,14 @@ class FlowScheduler:
 
         now = datetime.now()
 
+        if interval_seconds is not None and interval_seconds <= 0:
+            raise ValueError(f"interval_seconds must be > 0, got {interval_seconds}")
+
         if interval_seconds is not None:
             next_run = now + timedelta(seconds=interval_seconds)
         else:
-            assert cron_expr is not None
+            if cron_expr is None:
+                raise ValueError("Either cron_expr or interval_seconds must be provided")
             next_run = _next_cron_run(cron_expr, now)
 
         job = ScheduledJob(
