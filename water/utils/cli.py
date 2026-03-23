@@ -2,11 +2,14 @@ import argparse
 import asyncio
 import importlib
 import json
+import logging
 import os
 import sys
 import urllib.request
 import urllib.error
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 RENDER_API_BASE = "https://api.render.com/v1"
@@ -177,6 +180,7 @@ def _find_app_module():
             if "FlowServer" in content and "get_app()" in content:
                 return py_file.stem
         except Exception:
+            logger.warning("Failed to read file '%s' while searching for FlowServer", py_file, exc_info=True)
             continue
     return None
 

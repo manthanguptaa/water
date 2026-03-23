@@ -12,8 +12,11 @@ to the caller.
 
 import asyncio
 import copy
+import logging
 from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, Callable, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 from water.middleware.base import Middleware
 
@@ -283,6 +286,7 @@ class FlowDebugger:
         try:
             self._flow_result = await self._flow.run(input_data)
         except Exception as exc:
+            logger.exception("Flow execution failed during debugging")
             self._flow_error = exc
         finally:
             self._flow_done.set()

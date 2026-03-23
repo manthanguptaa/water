@@ -8,11 +8,14 @@ backend options (in-memory, subprocess, Docker).
 
 import asyncio
 import io
+import logging
 import os
 import sys
 import tempfile
 import time
 import traceback
+
+logger = logging.getLogger(__name__)
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -199,6 +202,7 @@ class SubprocessSandbox(SandboxBackend):
                     try:
                         return_value = json.loads(line[len("__SANDBOX_RESULT__:"):])
                     except json.JSONDecodeError:
+                        logger.warning("Failed to decode subprocess sandbox result JSON: %s", line)
                         pass
                 else:
                     filtered_stderr_lines.append(line)
@@ -297,6 +301,7 @@ class DockerSandbox(SandboxBackend):
                 result = container.wait(timeout=config.timeout)
                 exit_code = result.get("StatusCode", 1)
             except Exception:
+                logger.warning("Docker container wait failed or timed out, killing container", exc_info=True)
                 container.kill()
                 timed_out = True
                 exit_code = 1
@@ -309,6 +314,7 @@ class DockerSandbox(SandboxBackend):
             )
 
         except Exception as e:
+            logger.exception("Docker sandbox execution failed")
             stdout_text = ""
             stderr_text = str(e)
             exit_code = 1
@@ -317,6 +323,7 @@ class DockerSandbox(SandboxBackend):
                 try:
                     container.remove(force=True)
                 except Exception:
+                    logger.warning("Failed to remove Docker container", exc_info=True)
                     pass
             # Clean up temp dir
             import shutil
@@ -333,6 +340,7 @@ class DockerSandbox(SandboxBackend):
                 try:
                     return_value = json.loads(line[len("__SANDBOX_RESULT__:"):])
                 except json.JSONDecodeError:
+                    logger.warning("Failed to decode Docker sandbox result JSON: %s", line)
                     pass
             else:
                 filtered_stderr_lines.append(line)

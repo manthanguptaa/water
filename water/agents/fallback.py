@@ -7,9 +7,12 @@ lowest_latency. Tracks per-provider metrics and optionally integrates
 with CircuitBreaker to skip providers in a failed state.
 """
 
+import logging
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 from water.agents.llm import LLMProvider
 from water.resilience.circuit_breaker import CircuitBreaker
@@ -175,6 +178,7 @@ class FallbackChain(LLMProvider):
             try:
                 return await self._try_provider(idx, messages, **kwargs)
             except Exception as exc:
+                logger.warning("Provider %d failed in fallback chain: %s", idx, exc, exc_info=True)
                 last_error = exc
 
         if last_error is not None:

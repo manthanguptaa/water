@@ -1,6 +1,9 @@
+import logging
 import time
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List, Callable
+
+logger = logging.getLogger(__name__)
 
 from water.core.types import SerializableMixin
 
@@ -101,6 +104,7 @@ class AutoInstrumentor:
             trace.set_tracer_provider(provider)
             self._tracer = trace.get_tracer(self.config.service_name)
         except ImportError:
+            logger.warning("OpenTelemetry SDK packages not available for instrumentation setup")
             pass
 
     # Middleware interface

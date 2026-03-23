@@ -16,9 +16,12 @@ provider-specific code.
 
 import inspect
 import json
+import logging
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Type
+
+logger = logging.getLogger(__name__)
 
 from pydantic import BaseModel
 
@@ -81,6 +84,7 @@ class Tool:
                 result = self.execute_fn(**arguments)
             return ToolResult(tool_name=self.name, output=result, success=True)
         except Exception as e:
+            logger.exception("Tool '%s' execution failed", self.name)
             return ToolResult(tool_name=self.name, output=None, error=str(e), success=False)
 
     def to_openai_schema(self) -> Dict[str, Any]:
@@ -232,6 +236,7 @@ class ToolExecutor:
                     try:
                         arguments = json.loads(arguments_str)
                     except json.JSONDecodeError:
+                        logger.warning("Failed to parse tool call arguments for '%s': %s", tool_name, arguments_str)
                         arguments = {}
                 else:
                     arguments = arguments_str

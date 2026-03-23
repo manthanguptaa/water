@@ -1,8 +1,11 @@
+import logging
 from typing import List, Dict, Any, Optional, Type
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 from water.core.flow import Flow
 from water.observability.dashboard import FlowDashboard
@@ -120,6 +123,7 @@ class FlowServer:
             return schema_dict
 
         except Exception:
+            logger.warning("Failed to parse schema for input model", exc_info=True)
             return {"error": "Could not parse schema"}
 
     def _extract_task_info(self, execution_nodes: List[Dict[str, Any]]) -> List[TaskInfo]:

@@ -7,9 +7,12 @@ onward.  Useful for debugging failures, iterating on individual tasks, and
 overriding inputs without re-running an entire pipeline.
 """
 
+import logging
 import uuid
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "ReplayConfig",
@@ -68,6 +71,7 @@ class ReplayEngine:
                 asyncio.get_running_loop()
                 return None  # Can't block in async context
             except RuntimeError:
+                logger.debug("No running event loop detected; safe to proceed with sync session load")
                 pass  # No running loop — safe to proceed
         return None
 

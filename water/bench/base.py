@@ -7,10 +7,13 @@ latency, and more.
 """
 
 import json
+import logging
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -234,6 +237,7 @@ class BenchmarkRunner:
                         output = response.get("text", "")
                         score = benchmark.evaluate(output, case.expected)
                     except Exception as exc:
+                        logger.warning("Benchmark case '%s' failed for provider '%s': %s", case_id, provider_name, exc, exc_info=True)
                         error = str(exc)
                         score = 0.0
 

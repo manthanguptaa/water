@@ -963,6 +963,7 @@ class Flow:
                     try:
                         node_info["condition_matches"] = bool(when(input_data))
                     except Exception as e:
+                        logger.warning("Condition evaluation error during dry run: %s", e, exc_info=True)
                         node_info["condition_matches"] = None
                         node_info["errors"].append(f"Condition evaluation error: {e}")
                         all_valid = False
@@ -1227,4 +1228,5 @@ class Flow:
             task.input_schema(**data)
             return True, []
         except Exception as e:
+            logger.warning("Input validation failed for task '%s': %s", task.id, e, exc_info=True)
             return False, [f"Task '{task.id}' input validation failed: {e}"]

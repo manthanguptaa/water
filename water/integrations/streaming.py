@@ -87,12 +87,14 @@ class StreamManager:
             try:
                 self._global_subscribers.remove(queue)
             except ValueError:
+                logger.debug("Attempted to unsubscribe a queue that was not in global subscribers")
                 pass
         else:
             queues = self._subscribers.get(execution_id, [])
             try:
                 queues.remove(queue)
             except ValueError:
+                logger.debug("Attempted to unsubscribe a queue not found for execution_id '%s'", execution_id)
                 pass
             if not queues and execution_id in self._subscribers:
                 del self._subscribers[execution_id]
@@ -316,6 +318,7 @@ class StreamingFlow:
                     r = await self.flow.run(input_data)
                     result_holder.append(r)
                 except Exception as e:
+                    logger.exception("Streaming flow execution failed")
                     error_holder.append(e)
 
             await asyncio.gather(run_flow(), collect_events())

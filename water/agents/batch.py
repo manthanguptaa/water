@@ -15,9 +15,12 @@ batch-processing Task that fits into a Flow.
 """
 
 import asyncio
+import logging
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 from pydantic import BaseModel
 
@@ -121,6 +124,7 @@ class BatchProcessor:
                     item.result = result
                     item.status = "completed"
                 except Exception as exc:
+                    logger.warning("Batch item %d failed: %s", item.index, exc, exc_info=True)
                     item.error = str(exc)
                     item.status = "failed"
                 finally:

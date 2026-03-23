@@ -5,8 +5,11 @@ Read and write files as part of flow execution.
 """
 
 import json
+import logging
 from pathlib import Path
 from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
 
 from pydantic import BaseModel
 
@@ -59,6 +62,7 @@ def file_read(
             try:
                 result["json_data"] = json.loads(content)
             except json.JSONDecodeError as e:
+                logger.warning("Failed to parse JSON content from '%s': %s", file_path, e)
                 result["error"] = f"JSON parse error: {e}"
 
         return result

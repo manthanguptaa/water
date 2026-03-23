@@ -7,8 +7,11 @@ and MCPClient to consume external MCP servers as Water tasks.
 
 import asyncio
 import json
+import logging
 import sys
 from typing import Any, Callable, Dict, List, Optional, Type
+
+logger = logging.getLogger(__name__)
 
 from pydantic import BaseModel
 
@@ -52,6 +55,7 @@ class MCPServer:
                     try:
                         input_schema = task.input_schema.model_json_schema()
                     except Exception:
+                        logger.warning("Failed to parse input schema for task '%s'", task.id, exc_info=True)
                         pass
 
             tools.append({
@@ -146,6 +150,7 @@ class MCPServer:
                     },
                 }
             except Exception as e:
+                logger.exception("MCP tools/call failed for flow '%s'", tool_name)
                 return {
                     "jsonrpc": "2.0",
                     "id": req_id,
@@ -232,6 +237,7 @@ class MCPServer:
                     },
                 }
             except Exception as e:
+                logger.exception("Async MCP tools/call failed for flow '%s'", tool_name)
                 return {
                     "jsonrpc": "2.0",
                     "id": req_id,

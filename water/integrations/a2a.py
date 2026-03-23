@@ -8,11 +8,14 @@ and collaborate across trust boundaries.
 
 import asyncio
 import json
+import logging
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
+
+logger = logging.getLogger(__name__)
 from typing import Any, Callable, Dict, List, Optional, Type
 
 from pydantic import BaseModel
@@ -217,6 +220,7 @@ class A2AServer:
             result = await handler(params)
             return {"jsonrpc": "2.0", "id": req_id, "result": result}
         except Exception as e:
+            logger.exception("A2A request handler failed for method '%s'", method)
             return {
                 "jsonrpc": "2.0",
                 "id": req_id,
@@ -248,6 +252,7 @@ class A2AServer:
             response_parts = [MessagePart.data(result)]
             task.messages.append(A2AMessage(role="agent", parts=response_parts))
         except Exception as e:
+            logger.exception("A2A task '%s' failed during flow execution", task_id)
             task.state = TaskState.FAILED
             task.error = str(e)
             task.updated_at = datetime.now(timezone.utc).isoformat()

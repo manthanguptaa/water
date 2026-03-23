@@ -20,10 +20,13 @@ system prompt context or manipulated via agent tools.
 import abc
 import enum
 import json
+import logging
 import os
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Union
+
+logger = logging.getLogger(__name__)
 
 from water.agents.tools import Tool
 
@@ -308,6 +311,7 @@ class MemoryManager:
             try:
                 entry = await self._backend_for(lyr).get(key, lyr)
             except ValueError:
+                logger.debug("No backend configured for memory layer '%s'", lyr.value)
                 continue
             if entry is not None:
                 return entry
@@ -325,6 +329,7 @@ class MemoryManager:
             try:
                 backend = self._backend_for(lyr)
             except ValueError:
+                logger.debug("No backend configured for memory layer '%s' during search", lyr.value)
                 continue
             entries = await backend.search(query, lyr, limit - len(results))
             for entry in entries:
@@ -347,6 +352,7 @@ class MemoryManager:
             try:
                 backend = self._backend_for(lyr)
             except ValueError:
+                logger.debug("No backend configured for memory layer '%s' during get_all", lyr.value)
                 continue
             results.extend(await backend.list_all(lyr))
         return results
@@ -399,6 +405,7 @@ class MemoryManager:
             try:
                 backend = self._backend_for(lyr)
             except ValueError:
+                logger.debug("No backend configured for memory layer '%s' during cache collection", lyr.value)
                 continue
             # InMemoryBackend
             if isinstance(backend, InMemoryBackend):

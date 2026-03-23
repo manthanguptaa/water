@@ -1023,6 +1023,7 @@ class ExecutionEngine:
             try:
                 user_message = prompt_template.format(**data) if isinstance(data, dict) else prompt_template.format(input=data)
             except (KeyError, IndexError):
+                logger.warning("Failed to format prompt template, falling back to str(data)", exc_info=True)
                 user_message = str(data)
         else:
             user_message = data.get("prompt", str(data)) if isinstance(data, dict) else str(data)

@@ -5,9 +5,12 @@ Webhook, email, and messaging notifications.
 """
 
 import json
+import logging
 import urllib.request
 import urllib.error
 from typing import Any, Dict, Optional
+
+logger = logging.getLogger(__name__)
 
 from pydantic import BaseModel
 
@@ -69,8 +72,10 @@ def webhook_task(
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 return {"status_code": resp.status, "success": True}
         except urllib.error.HTTPError as e:
+            logger.warning("Webhook POST to '%s' returned HTTP %d: %s", webhook_url, e.code, e)
             return {"status_code": e.code, "success": False, "error": str(e)}
         except urllib.error.URLError as e:
+            logger.warning("Webhook POST to '%s' failed with URL error: %s", webhook_url, e)
             return {"status_code": 0, "success": False, "error": str(e)}
 
     return Task(

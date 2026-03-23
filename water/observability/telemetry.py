@@ -33,6 +33,7 @@ try:
         "_otel_available_var", default=True
     )
 except ImportError:
+    logger.debug("OpenTelemetry not installed; telemetry will be disabled")
     pass
 
 

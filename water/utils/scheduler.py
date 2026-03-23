@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -220,7 +223,8 @@ class FlowScheduler:
             await flow.run(job.input_data)
         except Exception:
             # In production you'd route to a DLQ or emit an event; here we
-            # silently continue so the scheduler keeps running.
+            # continue so the scheduler keeps running.
+            logger.exception("Scheduled job '%s' failed", job.job_id)
             pass
 
         job.last_run = now
