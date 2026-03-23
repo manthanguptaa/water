@@ -9,7 +9,7 @@ import hashlib
 import json
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, Dict, Optional, Tuple
 
 
 class TaskCache(ABC):
@@ -41,7 +41,7 @@ class InMemoryCache(TaskCache):
 
     def __init__(self) -> None:
         # _store maps key -> (value, expire_at | None)
-        self._store: dict[str, tuple[Any, Optional[float]]] = {}
+        self._store: Dict[str, Tuple[Any, Optional[float]]] = {}
 
     # -- internal helpers --------------------------------------------------
 

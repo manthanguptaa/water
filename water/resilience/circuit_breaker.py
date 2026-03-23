@@ -14,6 +14,7 @@ States:
 """
 
 import time
+from typing import Optional
 
 
 class CircuitBreakerOpen(Exception):
@@ -34,7 +35,7 @@ class CircuitBreaker:
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
         self._failure_count: int = 0
-        self._opened_at: float | None = None
+        self._opened_at: Optional[float] = None
         self._state: str = "closed"
 
     def record_success(self) -> None:

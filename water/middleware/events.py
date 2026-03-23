@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime
-from typing import Any, AsyncIterator, Dict, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class EventEmitter:
     """
 
     def __init__(self) -> None:
-        self._queues: list[asyncio.Queue] = []
+        self._queues: List[asyncio.Queue] = []
         self._closed = False
 
     async def emit(self, event: FlowEvent) -> None:
