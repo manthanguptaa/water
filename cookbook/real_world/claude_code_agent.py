@@ -125,38 +125,48 @@ class AnthropicToolProvider:
         temperature = kwargs.get("temperature", 0.7)
         max_tokens = kwargs.get("max_tokens", 1024)
 
-        # Separate system prompt from messages
+        # Separate system prompt from messages and convert to Anthropic format
         system = None
         filtered_messages = []
         for msg in messages:
             if msg["role"] == "system":
                 system = msg["content"]
-            else:
-                # Convert tool messages to Anthropic format
-                if msg["role"] == "tool":
+            elif msg["role"] == "tool":
+                # Consolidate consecutive tool results into a single user message
+                tool_block = {
+                    "type": "tool_result",
+                    "tool_use_id": msg.get("tool_call_id", ""),
+                    "content": msg.get("content", ""),
+                }
+                if filtered_messages and filtered_messages[-1]["role"] == "user" and isinstance(filtered_messages[-1].get("content"), list):
+                    # Append to existing tool_result user message
+                    filtered_messages[-1]["content"].append(tool_block)
+                else:
                     filtered_messages.append({
                         "role": "user",
-                        "content": [{
-                            "type": "tool_result",
-                            "tool_use_id": msg.get("tool_call_id", ""),
-                            "content": msg.get("content", ""),
-                        }],
+                        "content": [tool_block],
                     })
-                elif msg["role"] == "assistant" and msg.get("tool_calls"):
-                    # Convert OpenAI-style assistant+tool_calls to Anthropic
-                    content = []
-                    if msg.get("content"):
-                        content.append({"type": "text", "text": msg["content"]})
-                    for tc in msg["tool_calls"]:
-                        content.append({
-                            "type": "tool_use",
-                            "id": tc["id"],
-                            "name": tc["function"]["name"],
-                            "input": tc["function"]["arguments"],
-                        })
-                    filtered_messages.append({"role": "assistant", "content": content})
-                else:
-                    filtered_messages.append(msg)
+            elif msg["role"] == "assistant" and msg.get("tool_calls"):
+                # Convert OpenAI-style assistant+tool_calls to Anthropic
+                content = []
+                if msg.get("content"):
+                    content.append({"type": "text", "text": msg["content"]})
+                for tc in msg["tool_calls"]:
+                    args = tc["function"]["arguments"]
+                    if isinstance(args, str):
+                        try:
+                            args = json.loads(args)
+                        except (json.JSONDecodeError, TypeError):
+                            args = {}
+                    content.append({
+                        "type": "tool_use",
+                        "id": tc["id"],
+                        "name": tc["function"]["name"],
+                        "input": args,
+                    })
+                filtered_messages.append({"role": "assistant", "content": content})
+            else:
+                filtered_messages.append(msg)
 
         # Convert OpenAI tool schemas to Anthropic format
         anthropic_tools = None
