@@ -99,3 +99,12 @@ from water.agents.tool_search import (
     SemanticToolSelector,
     create_tool_selector,
 )
+from water.agents.conversation import (
+    Turn,
+    ConversationState,
+    ConversationManager,
+    create_conversation_task,
+)
+from water.agents.structured import (
+    create_structured_task,
+)

@@ -139,6 +139,11 @@ from water.agents import (
     TFIDFScorer,
     SemanticToolSelector,
     create_tool_selector,
+    Turn,
+    ConversationState,
+    ConversationManager,
+    create_conversation_task,
+    create_structured_task,
 )
 
 # --- Integrations ---
@@ -171,6 +176,17 @@ from water.integrations import (
 
 # --- Plugins ---
 from water.plugins import PluginRegistry, WaterPlugin, PluginType
+
+# --- Bench ---
+from water.bench import (
+    BenchmarkCase,
+    BenchmarkResult,
+    Benchmark,
+    BenchmarkRunner,
+    BenchmarkReport,
+    ToolUseBenchmark,
+    InstructionBenchmark,
+)
 
 # --- Eval ---
 from water.eval import (
@@ -251,6 +267,9 @@ from water.tasks import (
     log_task,
     noop,
 )
+
+# --- Debug ---
+from water.debug import FlowDebugger, Breakpoint, DebugStep
 
 # --- Utils ---
 from water.utils import (
@@ -387,6 +406,11 @@ __all__ = [
     "TFIDFScorer",
     "SemanticToolSelector",
     "create_tool_selector",
+    "Turn",
+    "ConversationState",
+    "ConversationManager",
+    "create_conversation_task",
+    "create_structured_task",
     # Integrations
     "MCPServer",
     "MCPClient",
@@ -417,6 +441,14 @@ __all__ = [
     "PluginRegistry",
     "WaterPlugin",
     "PluginType",
+    # Bench
+    "BenchmarkCase",
+    "BenchmarkResult",
+    "Benchmark",
+    "BenchmarkRunner",
+    "BenchmarkReport",
+    "ToolUseBenchmark",
+    "InstructionBenchmark",
     # Eval
     "EvalSuite",
     "EvalCase",
@@ -481,6 +513,10 @@ __all__ = [
     "SecretValue",
     "SecretsManager",
     "EnvSecretsManager",
+    # Debug
+    "FlowDebugger",
+    "Breakpoint",
+    "DebugStep",
     # Tasks (Standard Library)
     "http_request",
     "json_transform",
