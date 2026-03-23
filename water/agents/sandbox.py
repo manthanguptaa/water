@@ -25,6 +25,8 @@ from pydantic import BaseModel
 
 from water.core.task import Task
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class SandboxConfig:
@@ -254,6 +256,16 @@ class DockerSandbox(SandboxBackend):
             self._client = docker.from_env()
         return self._client
 
+    def close(self) -> None:
+        """Close the Docker client and release resources."""
+        if self._client is not None:
+            try:
+                self._client.close()
+            except Exception:
+                logger.warning("Failed to close Docker client", exc_info=True)
+            finally:
+                self._client = None
+
     async def execute(self, code: str, config: SandboxConfig) -> SandboxResult:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
@@ -323,8 +335,11 @@ class DockerSandbox(SandboxBackend):
                 try:
                     container.remove(force=True)
                 except Exception:
-                    logger.warning("Failed to remove Docker container", exc_info=True)
-                    pass
+                    logger.warning(
+                        "Failed to remove Docker container %s",
+                        getattr(container, "id", "unknown"),
+                        exc_info=True,
+                    )
             # Clean up temp dir
             import shutil
             shutil.rmtree(tmp_dir, ignore_errors=True)

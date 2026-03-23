@@ -205,8 +205,7 @@ class SQLiteStorage(StorageBackend):
         self._init_db()
 
     def _init_db(self) -> None:
-        conn = sqlite3.connect(self.db_path)
-        try:
+        with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS flow_sessions (
                     execution_id TEXT PRIMARY KEY,
@@ -246,8 +245,6 @@ class SQLiteStorage(StorageBackend):
                 ON flow_sessions(flow_id)
             """)
             conn.commit()
-        finally:
-            conn.close()
 
     def _get_conn(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)
@@ -256,8 +253,7 @@ class SQLiteStorage(StorageBackend):
 
     async def save_session(self, session: FlowSession) -> None:
         session.updated_at = datetime.now(timezone.utc)
-        conn = self._get_conn()
-        try:
+        with self._get_conn() as conn:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO flow_sessions
@@ -280,12 +276,9 @@ class SQLiteStorage(StorageBackend):
                 ),
             )
             conn.commit()
-        finally:
-            conn.close()
 
     async def get_session(self, execution_id: str) -> Optional[FlowSession]:
-        conn = self._get_conn()
-        try:
+        with self._get_conn() as conn:
             row = conn.execute(
                 "SELECT * FROM flow_sessions WHERE execution_id = ?",
                 (execution_id,),
@@ -305,12 +298,9 @@ class SQLiteStorage(StorageBackend):
                 created_at=datetime.fromisoformat(row["created_at"]),
                 updated_at=datetime.fromisoformat(row["updated_at"]),
             )
-        finally:
-            conn.close()
 
     async def list_sessions(self, flow_id: Optional[str] = None) -> List[FlowSession]:
-        conn = self._get_conn()
-        try:
+        with self._get_conn() as conn:
             if flow_id:
                 rows = conn.execute(
                     "SELECT * FROM flow_sessions WHERE flow_id = ? ORDER BY created_at DESC",
@@ -337,12 +327,9 @@ class SQLiteStorage(StorageBackend):
                 )
                 for row in rows
             ]
-        finally:
-            conn.close()
 
     async def save_task_run(self, task_run: TaskRun) -> None:
-        conn = self._get_conn()
-        try:
+        with self._get_conn() as conn:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO task_runs
@@ -364,12 +351,9 @@ class SQLiteStorage(StorageBackend):
                 ),
             )
             conn.commit()
-        finally:
-            conn.close()
 
     async def get_task_runs(self, execution_id: str) -> List[TaskRun]:
-        conn = self._get_conn()
-        try:
+        with self._get_conn() as conn:
             rows = conn.execute(
                 "SELECT * FROM task_runs WHERE execution_id = ? ORDER BY node_index, started_at",
                 (execution_id,),
@@ -390,5 +374,3 @@ class SQLiteStorage(StorageBackend):
                 )
                 for row in rows
             ]
-        finally:
-            conn.close()

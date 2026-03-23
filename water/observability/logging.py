@@ -204,6 +204,18 @@ class StructuredLogger:
         """Clear the log buffer."""
         self._log_buffer.clear()
 
+    def close(self) -> None:
+        """Close and remove all handlers from the logger."""
+        for handler in self._logger.handlers[:]:
+            try:
+                handler.close()
+            except Exception:
+                logging.getLogger(__name__).warning(
+                    "Failed to close log handler %s", handler, exc_info=True
+                )
+            finally:
+                self._logger.removeHandler(handler)
+
 
 class LogExporter:
     """
