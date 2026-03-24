@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "water-ai"
-version = "0.1.3"
+version = "0.1.4"
 description = "The production-ready agent harness framework for Python"
 authors = [
     {name = "Manthan Gupta", email = "manthangupta109@gmail.com"}
