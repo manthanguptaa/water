@@ -13,7 +13,7 @@ Scenarios shown:
 
 import asyncio
 
-from water.agents.llm import LLMProvider, MockProvider
+from water.agents.llm import LLMProvider, OpenAIProvider
 from water.agents.fallback import FallbackChain
 
 
@@ -37,7 +37,7 @@ async def demo_first_success():
     chain = FallbackChain(
         providers=[
             UnreachableProvider(),          # primary -- always fails
-            MockProvider("backup-response"),  # secondary -- always succeeds
+            OpenAIProvider(model="gpt-4o-mini", temperature=0.3),  # secondary -- real LLM
         ],
         strategy="first_success",
     )
@@ -62,9 +62,9 @@ async def demo_round_robin():
     print("=== round_robin strategy ===")
     chain = FallbackChain(
         providers=[
-            MockProvider("model-A"),
-            MockProvider("model-B"),
-            MockProvider("model-C"),
+            OpenAIProvider(model="gpt-4o-mini", temperature=0.0),
+            OpenAIProvider(model="gpt-4o-mini", temperature=0.5),
+            OpenAIProvider(model="gpt-4o-mini", temperature=1.0),
         ],
         strategy="round_robin",
     )
@@ -85,7 +85,7 @@ async def demo_metrics():
     chain = FallbackChain(
         providers=[
             UnreachableProvider(),
-            MockProvider("ok"),
+            OpenAIProvider(model="gpt-4o-mini", temperature=0.3),
         ],
         strategy="first_success",
     )

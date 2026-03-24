@@ -2,32 +2,24 @@
 Cookbook: Multi-Turn Conversation Flow
 ======================================
 
-Demonstrates how to use ConversationManager with a MockProvider
+Demonstrates how to use ConversationManager with a real OpenAI LLM
 to build a support bot that preserves dialogue state across turns.
 """
 
 import asyncio
 
 from water.agents.conversation import ConversationManager, ConversationState
-from water.agents.llm import MockProvider
+from water.agents.llm import OpenAIProvider
 
 
 async def main():
-    # Set up a mock provider that returns canned support-bot responses
-    provider = MockProvider(
-        responses=[
-            "Hello! I'm your support bot. How can I help you today?",
-            "I understand you're having trouble logging in. Let me look into that.",
-            "I've reset your password. You should receive an email shortly.",
-            "You're welcome! Is there anything else I can help with?",
-            "Glad I could help. Have a great day!",
-        ]
-    )
+    # Set up a real OpenAI provider
+    provider = OpenAIProvider(model="gpt-4o-mini", temperature=0.7)
 
     # Create a conversation manager with a system prompt
     manager = ConversationManager(
         provider=provider,
-        system_prompt="You are a friendly customer support agent.",
+        system_prompt="You are a friendly customer support agent. Keep responses brief (1-2 sentences).",
         max_history=50,
     )
 

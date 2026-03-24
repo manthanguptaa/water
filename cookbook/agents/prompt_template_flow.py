@@ -7,11 +7,12 @@ Demonstrates the Water Prompt Templating Engine:
   - Composing multiple templates into one
   - Integrating templates with create_agent_task
 
-NOTE: This example uses MockProvider so it runs without real API keys.
+NOTE: This example uses OpenAIProvider and requires a valid OPENAI_API_KEY.
 """
 
 import asyncio
-from water.agents import create_agent_task, MockProvider
+from water.agents import create_agent_task
+from water.agents.llm import OpenAIProvider
 from water.agents.prompts import PromptTemplate, PromptLibrary
 from water.core import Flow, create_task
 
@@ -130,7 +131,7 @@ async def agent_task_demo():
     )
 
     # Build a flow with an agent task that uses the rendered prompt
-    provider = MockProvider(responses=["This is a concise summary of the article."])
+    provider = OpenAIProvider(model="gpt-4o-mini", temperature=0.3)
 
     summarize = create_agent_task(
         id="summarize",

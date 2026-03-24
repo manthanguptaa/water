@@ -170,12 +170,15 @@ def create_agentic_task(
                         args = json.loads(args)
                     except (json.JSONDecodeError, TypeError):
                         pass
+                # Serialize arguments to JSON string for the message history
+                # (OpenAI API requires arguments as a JSON string)
+                args_str = json.dumps(args) if isinstance(args, dict) else str(args)
                 normalized_tc.append({
                     "id": tc.get("id", ""),
                     "type": "function",
                     "function": {
                         "name": fn.get("name", ""),
-                        "arguments": args,
+                        "arguments": args_str,
                     },
                 })
             assistant_msg = {"role": "assistant", "content": thought, "tool_calls": normalized_tc}

@@ -105,17 +105,32 @@ def write_sample_yaml_config(directory: str = ".") -> Path:
 # 2) A minimal flow to evaluate against
 # ---------------------------------------------------------------------------
 
+from pydantic import BaseModel
 from water.core.flow import Flow
-from water.core.task import Task
+from water.core.task import Task, create_task
 
 
-async def greet(input_data: dict) -> dict:
-    name = input_data.get("name", "World")
+class GreetInput(BaseModel):
+    name: str = "World"
+
+class GreetOutput(BaseModel):
+    greeting: str
+
+
+def greet(params, ctx):
+    name = params.get("input_data", params).get("name", "World")
     return {"greeting": f"Hello, {name}!"}
 
 
+greet_task = create_task(
+    id="greet",
+    input_schema=GreetInput,
+    output_schema=GreetOutput,
+    execute=greet,
+)
+
 greeting_flow = Flow(id="greeting_flow", description="Simple greeting flow")
-greeting_flow.add_task(Task(id="greet", execute=greet))
+greeting_flow.then(greet_task).register()
 
 
 # ---------------------------------------------------------------------------

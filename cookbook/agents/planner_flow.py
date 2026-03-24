@@ -14,7 +14,7 @@ import json
 from pydantic import BaseModel
 
 from water.core.task import Task
-from water.agents.llm import MockProvider
+from water.agents.llm import OpenAIProvider
 from water.agents.planner import (
     PlannerAgent,
     TaskRegistry,
@@ -97,21 +97,7 @@ async def demo_planner_agent():
     print("Demo 1: PlannerAgent.plan_and_execute")
     print("=" * 60)
 
-    # The mock provider returns a fixed plan for demonstration purposes.
-    plan_json = json.dumps({
-        "steps": [
-            {"task": "fetch_data", "input": {"url": "https://api.example.com/sales"}},
-            {"task": "clean_data", "input": {}},
-            {"task": "summarise", "input": {}},
-            {"task": "save_report", "input": {}},
-        ],
-        "reasoning": (
-            "First fetch the sales data, clean it, produce a summary, "
-            "then persist the report."
-        ),
-    })
-
-    provider = MockProvider(default_response=plan_json)
+    provider = OpenAIProvider(model="gpt-4o-mini", temperature=0.0)
     registry = build_registry()
     agent = PlannerAgent(provider=provider, task_registry=registry)
 
@@ -134,15 +120,7 @@ async def demo_planner_task():
     print("Demo 2: create_planner_task (composable Task)")
     print("=" * 60)
 
-    plan_json = json.dumps({
-        "steps": [
-            {"task": "fetch_data", "input": {"url": "https://api.example.com/inventory"}},
-            {"task": "summarise", "input": {}},
-        ],
-        "reasoning": "Fetch inventory then summarise.",
-    })
-
-    provider = MockProvider(default_response=plan_json)
+    provider = OpenAIProvider(model="gpt-4o-mini", temperature=0.0)
     registry = build_registry()
 
     planner_task = create_planner_task(

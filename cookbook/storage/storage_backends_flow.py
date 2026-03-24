@@ -13,6 +13,7 @@ Backends available:
 """
 
 import asyncio
+from pydantic import BaseModel
 from water.core import Flow, create_task
 from water.storage import InMemoryStorage, SQLiteStorage
 
@@ -21,15 +22,28 @@ from water.storage import InMemoryStorage, SQLiteStorage
 # 1. Define some simple tasks
 # ---------------------------------------------------------------------------
 
-@create_task(name="greet")
-async def greet(data):
-    name = data.get("name", "World")
-    return {"message": f"Hello, {name}!"}
+class GreetInput(BaseModel):
+    name: str = "World"
 
+class GreetOutput(BaseModel):
+    message: str
 
-@create_task(name="shout")
-async def shout(data):
-    return {"message": data["message"].upper()}
+class ShoutOutput(BaseModel):
+    message: str
+
+greet = create_task(
+    id="greet",
+    input_schema=GreetInput,
+    output_schema=GreetOutput,
+    execute=lambda data, ctx: {"message": f"Hello, {data['input_data']['name']}!"},
+)
+
+shout = create_task(
+    id="shout",
+    input_schema=GreetOutput,
+    output_schema=ShoutOutput,
+    execute=lambda data, ctx: {"message": data["input_data"]["message"].upper()},
+)
 
 
 # ---------------------------------------------------------------------------
@@ -37,11 +51,10 @@ async def shout(data):
 # ---------------------------------------------------------------------------
 
 memory_flow = Flow(
-    name="memory_flow",
+    id="memory_flow",
     storage=InMemoryStorage(),
 )
-memory_flow.add_task(greet)
-memory_flow.add_task(shout)
+memory_flow.then(greet).then(shout).register()
 
 
 # ---------------------------------------------------------------------------
@@ -49,11 +62,10 @@ memory_flow.add_task(shout)
 # ---------------------------------------------------------------------------
 
 sqlite_flow = Flow(
-    name="sqlite_flow",
+    id="sqlite_flow",
     storage=SQLiteStorage(db_path="my_flows.db"),
 )
-sqlite_flow.add_task(greet)
-sqlite_flow.add_task(shout)
+sqlite_flow.then(greet).then(shout).register()
 
 
 # ---------------------------------------------------------------------------
@@ -64,14 +76,13 @@ def make_redis_flow() -> Flow:
     from water.storage import RedisStorage
 
     redis_flow = Flow(
-        name="redis_flow",
+        id="redis_flow",
         storage=RedisStorage(
             redis_url="redis://localhost:6379",
             prefix="myapp",
         ),
     )
-    redis_flow.add_task(greet)
-    redis_flow.add_task(shout)
+    redis_flow.then(greet).then(shout).register()
     return redis_flow
 
 
@@ -87,11 +98,10 @@ async def make_postgres_flow() -> Flow:
     await storage.initialize()
 
     pg_flow = Flow(
-        name="postgres_flow",
+        id="postgres_flow",
         storage=storage,
     )
-    pg_flow.add_task(greet)
-    pg_flow.add_task(shout)
+    pg_flow.then(greet).then(shout).register()
     return pg_flow
 
 

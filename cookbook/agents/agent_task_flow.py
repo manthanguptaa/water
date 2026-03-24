@@ -8,9 +8,8 @@ It shows:
   - Using output_parser for structured output
   - A multi-agent flow (planner -> coder -> reviewer pattern)
 
-NOTE: This example uses MockProvider so it runs without real API keys.
-      Replace MockProvider with OpenAIProvider or AnthropicProvider for
-      production use.
+NOTE: This example uses OpenAIProvider and requires a valid OPENAI_API_KEY
+      environment variable.
 """
 
 import asyncio
@@ -20,7 +19,8 @@ from typing import Dict, Any
 from pydantic import BaseModel
 
 from water.core import Flow, create_task
-from water.agents import create_agent_task, MockProvider
+from water.agents import create_agent_task
+from water.agents.llm import OpenAIProvider
 
 
 # ---------------------------------------------------------------------------
@@ -61,9 +61,7 @@ async def simple_agent_example():
     """Create a single agent task and run it in a flow."""
     print("=== Simple Agent Task ===\n")
 
-    mock = MockProvider(
-        default_response="Water is a lightweight Python workflow framework."
-    )
+    provider = OpenAIProvider(model="gpt-4o-mini", temperature=0.3)
 
     class TopicInput(BaseModel):
         topic: str
@@ -72,7 +70,7 @@ async def simple_agent_example():
         id="explainer",
         description="Explains a topic",
         prompt_template="Explain {topic} in one sentence.",
-        provider_instance=mock,
+        provider_instance=provider,
         input_schema=TopicInput,
     )
 
@@ -92,13 +90,18 @@ async def structured_output_example():
     """Use an output_parser to convert LLM text into structured data."""
     print("=== Structured Output ===\n")
 
-    mock = MockProvider(
-        default_response='{"steps": ["design API", "write tests", "implement"], "estimated_hours": 4}'
-    )
+    provider = OpenAIProvider(model="gpt-4o-mini", temperature=0.0)
 
     def parse_plan(text: str) -> dict:
         """Parse the LLM JSON response into a plan dict."""
-        data = json.loads(text)
+        # Strip markdown code fences if present
+        cleaned = text.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned[3:]
+            if cleaned.endswith("```"):
+                cleaned = cleaned[:-3]
+            cleaned = cleaned.strip()
+        data = json.loads(cleaned)
         return {
             "plan": text,
             "steps": data["steps"],
@@ -116,8 +119,8 @@ async def structured_output_example():
     planner = create_agent_task(
         id="planner",
         description="Creates an implementation plan",
-        prompt_template="Create a plan to implement: {feature}",
-        provider_instance=mock,
+        prompt_template="Create a plan to implement: {feature}. Respond ONLY with JSON: {{\"steps\": [\"step1\", \"step2\", ...], \"estimated_hours\": N}}",
+        provider_instance=provider,
         output_parser=parse_plan,
         input_schema=FeatureInput,
         output_schema=PlanParserOutput,
@@ -140,7 +143,7 @@ async def chained_example():
     """Chain an agent task with a regular Python task."""
     print("=== Agent + Regular Task Chain ===\n")
 
-    mock = MockProvider(default_response="Use async/await for concurrency.")
+    provider = OpenAIProvider(model="gpt-4o-mini", temperature=0.3)
 
     class TopicInput(BaseModel):
         topic: str
@@ -148,8 +151,8 @@ async def chained_example():
     agent = create_agent_task(
         id="advisor",
         description="Gives coding advice",
-        prompt_template="What is the best practice for {topic}?",
-        provider_instance=mock,
+        prompt_template="What is the best practice for {topic}? Answer in one sentence.",
+        provider_instance=provider,
         input_schema=TopicInput,
     )
 
@@ -195,23 +198,17 @@ async def multi_agent_example():
     """
     print("=== Multi-Agent Flow (Planner -> Coder -> Reviewer) ===\n")
 
-    planner_mock = MockProvider(
-        default_response="Plan: 1) Parse input  2) Validate  3) Transform  4) Return result"
-    )
-    coder_mock = MockProvider(
-        default_response="def process(data):\n    validated = validate(data)\n    return transform(validated)"
-    )
-    reviewer_mock = MockProvider(
-        default_response="LGTM. Consider adding type hints and error handling."
-    )
+    planner_provider = OpenAIProvider(model="gpt-4o-mini", temperature=0.3)
+    coder_provider = OpenAIProvider(model="gpt-4o-mini", temperature=0.3)
+    reviewer_provider = OpenAIProvider(model="gpt-4o-mini", temperature=0.3)
 
     # Agent 1: Planner
     planner = create_agent_task(
         id="planner",
         description="Plans the implementation",
-        prompt_template="Design an implementation plan for: {feature}",
-        system_prompt="You are a senior software architect.",
-        provider_instance=planner_mock,
+        prompt_template="Design a brief implementation plan (3-4 steps) for: {feature}",
+        system_prompt="You are a senior software architect. Be concise.",
+        provider_instance=planner_provider,
         input_schema=FeatureRequest,
         output_schema=PlanOutput,
     )
@@ -235,9 +232,9 @@ async def multi_agent_example():
     coder = create_agent_task(
         id="coder",
         description="Writes the code",
-        prompt_template="Implement the following plan:\n{plan}",
-        system_prompt="You are an expert Python developer.",
-        provider_instance=coder_mock,
+        prompt_template="Write a short Python function implementing this plan:\n{plan}",
+        system_prompt="You are an expert Python developer. Write only the code, no explanation.",
+        provider_instance=coder_provider,
         input_schema=PlanBridge,
         output_schema=CodeOutput,
     )
@@ -262,9 +259,9 @@ async def multi_agent_example():
     reviewer = create_agent_task(
         id="reviewer",
         description="Reviews the code",
-        prompt_template="Review this code:\n{code}",
-        system_prompt="You are a meticulous code reviewer.",
-        provider_instance=reviewer_mock,
+        prompt_template="Review this code briefly:\n{code}",
+        system_prompt="You are a meticulous code reviewer. Be concise (1-2 sentences).",
+        provider_instance=reviewer_provider,
         input_schema=CodeBridge,
         output_schema=ReviewOutput,
     )

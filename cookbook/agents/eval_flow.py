@@ -9,8 +9,8 @@ flow output quality against expected results. It shows:
   - LLMJudge with a MockProvider for LLM-based scoring
   - EvalReport for analyzing results and detecting regressions
 
-NOTE: This example uses a simple mock flow and MockProvider so it runs
-      without real API keys.
+NOTE: The LLMJudge uses OpenAIProvider and requires a valid OPENAI_API_KEY.
+      The classification flow itself is rule-based (no LLM needed).
 """
 
 import asyncio
@@ -19,7 +19,7 @@ from typing import Any, Dict
 from pydantic import BaseModel
 
 from water.core import Flow, create_task
-from water.agents import MockProvider
+from water.agents.llm import OpenAIProvider
 from water.eval import (
     EvalSuite,
     EvalCase,
@@ -181,8 +181,8 @@ async def example_llm_judge_and_regression():
 
     flow = build_classify_flow()
 
-    # MockProvider returns a fixed score (simulating an LLM judge)
-    mock_judge = MockProvider(default_response="4")
+    # Real OpenAI provider for LLM judge scoring
+    llm_judge_provider = OpenAIProvider(model="gpt-4o-mini", temperature=0.0)
 
     cases = [
         EvalCase(
@@ -207,7 +207,7 @@ async def example_llm_judge_and_regression():
         evaluators=[
             ExactMatch(key="label"),
             LLMJudge(
-                provider=mock_judge,
+                provider=llm_judge_provider,
                 rubric="Is the classification correct and the summary clear?",
                 scale=5,
             ),
