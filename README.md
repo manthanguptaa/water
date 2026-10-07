@@ -446,6 +446,20 @@ client = MCPClient(server_url="http://localhost:3000")
 mcp_task = create_mcp_task(id="search", client=client, tool_name="web_search")
 ```
 
+For a live search and fetch example, see
+[`parallel_search_flow.py`](cookbook/integrations/parallel_search_flow.py).
+It uses the official MCP SDK's Streamable HTTP transport and Water's MCP task
+factory with the anonymous [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp)
+endpoint. From the repository root, in a Python 3.10+ virtual environment:
+
+```bash
+pip install . 'mcp>=1.30,<2'
+python -m cookbook.integrations.parallel_search_flow
+```
+
+No Parallel API key or LLM is needed. Anonymous access has lower rate limits;
+this example is intended for exploration and light use.
+
 ### A2A (Agent-to-Agent Protocol)
 
 Expose flows as discoverable A2A agents or call remote agents:
